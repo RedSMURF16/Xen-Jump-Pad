@@ -1,0 +1,43 @@
+[en] -- RedSMURF
+PAD_CHAT_TAG                     = ^4[XEN JUMP PAD]^1
+PAD_CHAT_LIMIT                   = You've reached the maximum number of Pads ^4%d
+PAD_CHAT_NO_PAD                  = There are no Pads available
+PAD_CHAT_CREATE_NEW              = ^3%s ^1created
+PAD_CHAT_SHOW_CURRENT            = ^3%s ^1is %L
+PAD_CHAT_SHOW_ALL_SHOWN          = All Pads are now Shown
+PAD_CHAT_SHOW_ALL_HIDDEN         = All Pads are now Hidden
+PAD_CHAT_REMOVE_CURRENT          = ^3%s ^1removed
+PAD_CHAT_REMOVE_ALL              = All Pads removed
+PAD_CHAT_SAVE                    = Pad data saved in ^4%s
+
+PAD_CHAT_SHOWN                   = Shown
+PAD_CHAT_HIDDEN                  = Hidden
+
+PAD_NAV_NEXT                     = Next
+PAD_NAV_BACK                     = Back
+PAD_ON                           = \y[ON]
+PAD_OFF                          = \r[OFF]
+PAD_SHOWN                        = \y[SHOWN]
+PAD_HIDDEN                       = \r[HIDDEN]
+
+PAD_MENU_TITLE                   = \dXen Jump Pad - Version \y%s
+PAD_MENU_TITLE_PAGE              = \yPage:\r
+PAD_ROOT_CREATE                  = Create Pad
+PAD_ROOT_REMOVE                  = Remove Pad
+PAD_ROOT_SHOW                    = Visibility settings
+PAD_ROOT_SAVE                    = Save data
+PAD_ROOT_NOCLIP                  = Status noclip %L
+PAD_ROOT_GODMODE                 = Status godmode %L
+PAD_ROOT_ROTATE                  = Adjust rotation
+
+PAD_SHOW_CURRENT                 = Show Pad >> %s%s %L
+PAD_SHOW_ALL_SHOW                = Show all Pads
+PAD_SHOW_ALL_HIDE                = Hide all Pads
+
+PAD_REMOVE_CURRENT               = Remove Pad >> \y%s
+PAD_REMOVE_ALL                   = Remove all Pads
+
+PAD_ROTATE_UP                    = Turn Up
+PAD_ROTATE_DOWN                  = Turn Down
+PAD_ROTATE_GROUND                = Set on ground >> %L
+PAD_ROTATE_PLACE                 = Place Pad
