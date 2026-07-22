@@ -15,6 +15,7 @@
 *
 *	Changelog:
 *       v1.0: Initial release.
+*       v1.1: Fixed the model, added different sizes, added usage per team
 *
 */
 
@@ -50,7 +51,6 @@
 #define MAX_ENT             32
 #define PAD_KEY             114477
 #define PAD_ARRAY_ITEM      pev_iuser1
-#define TARGET_OFFSET_UP    25.0
 
 #define PAD_SEQ_ACTIVE      0
 #define PAD_SEQ_RETURN      1
@@ -87,28 +87,53 @@ enum
 {
     FLAG_ACTIVE_DELAY       = (1 << 0),
     FLAG_ACTIVE_DURATION    = (1 << 1),
+    FLAG_PLAYERS_ONLY       = (1 << 2),
 
-    FLAG_SHOW               = (1 << 2),
-    FLAG_GHOST              = (1 << 3),
-    FLAG_GROUND             = (1 << 4),
-    FLAG_SELECT             = (1 << 5),
-    FLAG_ACTIVE             = (1 << 6)
+    FLAG_SHOW               = (1 << 3),
+    FLAG_GHOST              = (1 << 4),
+    FLAG_GROUND             = (1 << 5),
+    FLAG_SELECT             = (1 << 6),
+    FLAG_ACTIVE             = (1 << 7)
+}
+
+enum
+{
+    TEAM_NONE,
+    TEAM_T,
+    TEAM_CT,
+    TEAM_BOTH
+}
+
+enum
+{
+    SIZE_SMALL,
+    SIZE_MID,
+    SIZE_LARGE
 }
 
 enum _:MAIN_SETTINGS
 {
     SETTING_DEFAULT_MODEL[MAX_RESOURCE_PATH_LENGTH],
     SETTING_DEFAULT_FLAGS,
-    SETTING_DEFAULT_FRAMERATE,
+    SETTING_DEFAULT_TEAM,
+    SETTING_DEFAULT_SIZE,
     Float:SETTING_DEFAULT_FRAMERATE,
     Float:SETTING_DEFAULT_SPAWN_CHANCE,
     Float:SETTING_DEFAULT_ACTIVE_DELAY[2],
     Float:SETTING_DEFAULT_ACTIVE_DURATION[2],
     Float:SETTING_DEFAULT_ACTIVE_COOLDOWN[2],
 
-    Float:SETTING_PAD_MINS[3],
-    Float:SETTING_PAD_MAXS[3],
+    SETTING_MODEL_SMALL[MAX_RESOURCE_PATH_LENGTH],
+    SETTING_MODEL_MID[MAX_RESOURCE_PATH_LENGTH],
+    SETTING_MODEL_LARGE[MAX_RESOURCE_PATH_LENGTH],
+    Float:SETTING_MINS_SMALL[3],
+    Float:SETTING_MAXS_SMALL[3],
+    Float:SETTING_MINS_MID[3],
+    Float:SETTING_MAXS_MID[3],
+    Float:SETTING_MINS_LARGE[3],
+    Float:SETTING_MAXS_LARGE[3],
     Float:SETTING_DEFAULT_RADIUS,
+    Float:SETTING_DEFAULT_RADIUS_OFFSET,
     Float:SETTING_DEFAULT_STRENGTH[2],
     Float:SETTING_DEFAULT_COOLDOWN[2],
 
@@ -134,6 +159,8 @@ enum _:PAD
     PAD_ID,
     PAD_ITEM,
     PAD_FLAGS,
+    PAD_TEAM,
+    PAD_SIZE,
     PAD_NAME[MAX_VALUE_LENGTH],
     PAD_MODEL[MAX_RESOURCE_PATH_LENGTH],
 
@@ -143,6 +170,7 @@ enum _:PAD
     Float:PAD_MAXS[3],
 
     Float:PAD_RADIUS,
+    Float:PAD_RADIUS_OFFSET,
     Float:PAD_STRENGTH[2],
     Float:PAD_COOLDOWN[2],
 
@@ -256,8 +284,8 @@ public plugin_init()
 {
     register_plugin("Xen Jump Pad", PLUGIN_VERSION, "RedSMURF")
 
-    register_clcmd("say /xenjump",         "cmdMenu", ADMIN_RCON)
-    register_clcmd("say_team /xenjump",    "cmdMenu", ADMIN_RCON)
+    register_clcmd("say /xenjump",         "cmdMenu", ADMIN_RCON, "-- Opens the Xen Jump Pad menu.")
+    register_clcmd("say_team /xenjump",    "cmdMenu", ADMIN_RCON, "-- Opens the Xen Jump Pad menu.")
     register_concmd("xenjump_reload",      "cmdReload", ADMIN_RCON, "-- Reloads the configuration file")
 
     register_dictionary("XenJumpPad.txt")
@@ -417,9 +445,11 @@ ReadFile()
 
                         copy(ePad[PAD_NAME], charsmax(ePad[PAD_NAME]), szData)
                         copy(ePad[PAD_MODEL], charsmax(ePad[PAD_MODEL]), g_eSettings[SETTING_DEFAULT_MODEL])
-                        xs_vec_copy(g_eSettings[SETTING_PAD_MINS], ePad[PAD_MINS])
-                        xs_vec_copy(g_eSettings[SETTING_PAD_MAXS], ePad[PAD_MAXS])
+                        xs_vec_copy(g_eSettings[SETTING_MINS_MID], ePad[PAD_MINS])
+                        xs_vec_copy(g_eSettings[SETTING_MAXS_MID], ePad[PAD_MAXS])
                         ePad[PAD_FLAGS]               = g_eSettings[SETTING_DEFAULT_FLAGS]
+                        ePad[PAD_TEAM]                = g_eSettings[SETTING_DEFAULT_TEAM]
+                        ePad[PAD_SIZE]                = g_eSettings[SETTING_DEFAULT_SIZE]
                         ePad[PAD_SPAWN_CHANCE]        = g_eSettings[SETTING_DEFAULT_SPAWN_CHANCE]
                         ePad[PAD_ACTIVE_DELAY][0]     = g_eSettings[SETTING_DEFAULT_ACTIVE_DELAY][0]
                         ePad[PAD_ACTIVE_DELAY][1]     = g_eSettings[SETTING_DEFAULT_ACTIVE_DELAY][1]
@@ -428,6 +458,7 @@ ReadFile()
                         ePad[PAD_ACTIVE_COOLDOWN][0]  = g_eSettings[SETTING_DEFAULT_ACTIVE_COOLDOWN][0]
                         ePad[PAD_ACTIVE_COOLDOWN][1]  = g_eSettings[SETTING_DEFAULT_ACTIVE_COOLDOWN][1]
                         ePad[PAD_RADIUS]              = g_eSettings[SETTING_DEFAULT_RADIUS]
+                        ePad[PAD_RADIUS_OFFSET]       = g_eSettings[SETTING_DEFAULT_RADIUS_OFFSET]
                         ePad[PAD_STRENGTH][0]         = g_eSettings[SETTING_DEFAULT_STRENGTH][0]
                         ePad[PAD_STRENGTH][1]         = g_eSettings[SETTING_DEFAULT_STRENGTH][1]
                         ePad[PAD_COOLDOWN][0]         = g_eSettings[SETTING_DEFAULT_COOLDOWN][0]
@@ -465,6 +496,10 @@ ReadFile()
                             parseSetting(DTYPE_STRING_MODEL, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_MODEL], charsmax(g_eSettings[SETTING_DEFAULT_MODEL]))
                         else if ( equali(szKey, "SETTING_DEFAULT_FLAGS") )
                             parseSetting(DTYPE_FLAGS, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_FLAGS], charsmax(g_eSettings[SETTING_DEFAULT_FLAGS]))
+                        else if ( equali(szKey, "SETTING_DEFAULT_TEAM") )
+                            parseSetting(DTYPE_INT, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_TEAM], charsmax(g_eSettings[SETTING_DEFAULT_TEAM]))
+                        else if ( equali(szKey, "SETTING_DEFAULT_SIZE") )
+                            parseSetting(DTYPE_INT, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_SIZE], charsmax(g_eSettings[SETTING_DEFAULT_SIZE]))
                         else if ( equali(szKey, "SETTING_DEFAULT_FRAMERATE") )
                             parseSetting(DTYPE_FLOAT, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_FRAMERATE], charsmax(g_eSettings[SETTING_DEFAULT_FRAMERATE]))
                         else if ( equali(szKey, "SETTING_DEFAULT_SPAWN_CHANCE") )
@@ -477,14 +512,30 @@ ReadFile()
                             parseSetting(DTYPE_FLOAT_RANGE, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_ACTIVE_COOLDOWN], charsmax(g_eSettings[SETTING_DEFAULT_ACTIVE_COOLDOWN]))
                         else if ( equali(szKey, "SETTING_DEFAULT_RADIUS") )
                             parseSetting(DTYPE_FLOAT, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_RADIUS], charsmax(g_eSettings[SETTING_DEFAULT_RADIUS]))
+                        else if ( equali(szKey, "SETTING_DEFAULT_RADIUS_OFFSET") )
+                            parseSetting(DTYPE_FLOAT, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_RADIUS_OFFSET], charsmax(g_eSettings[SETTING_DEFAULT_RADIUS_OFFSET]))
                         else if ( equali(szKey, "SETTING_DEFAULT_STRENGTH") )
                             parseSetting(DTYPE_FLOAT_RANGE, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_STRENGTH], charsmax(g_eSettings[SETTING_DEFAULT_STRENGTH]))
                         else if ( equali(szKey, "SETTING_DEFAULT_COOLDOWN") )
                             parseSetting(DTYPE_FLOAT_RANGE, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_COOLDOWN], charsmax(g_eSettings[SETTING_DEFAULT_COOLDOWN]))
-                        else if ( equali(szKey, "SETTING_PAD_MINS") )
-                            parseSetting(DTYPE_VECTOR_FLOAT, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_PAD_MINS], charsmax(g_eSettings[SETTING_PAD_MINS]))
-                        else if ( equali(szKey, "SETTING_PAD_MAXS") )
-                            parseSetting(DTYPE_VECTOR_FLOAT, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_PAD_MAXS], charsmax(g_eSettings[SETTING_PAD_MAXS]))
+                        else if ( equali(szKey, "SETTING_MODEL_SMALL") )
+                            parseSetting(DTYPE_STRING_MODEL, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_MODEL_SMALL], charsmax(g_eSettings[SETTING_MODEL_SMALL]))
+                        else if ( equali(szKey, "SETTING_MODEL_MID") )
+                            parseSetting(DTYPE_STRING_MODEL, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_MODEL_MID], charsmax(g_eSettings[SETTING_MODEL_MID]))
+                        else if ( equali(szKey, "SETTING_MODEL_LARGE") )
+                            parseSetting(DTYPE_STRING_MODEL, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_MODEL_LARGE], charsmax(g_eSettings[SETTING_MODEL_LARGE]))
+                        else if ( equali(szKey, "SETTING_MINS_SMALL") )
+                            parseSetting(DTYPE_VECTOR_FLOAT, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_MINS_SMALL], charsmax(g_eSettings[SETTING_MINS_SMALL]))
+                        else if ( equali(szKey, "SETTING_MAXS_SMALL") )
+                            parseSetting(DTYPE_VECTOR_FLOAT, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_MAXS_SMALL], charsmax(g_eSettings[SETTING_MAXS_SMALL]))
+                        else if ( equali(szKey, "SETTING_MINS_MID") )
+                            parseSetting(DTYPE_VECTOR_FLOAT, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_MINS_MID], charsmax(g_eSettings[SETTING_MINS_MID]))
+                        else if ( equali(szKey, "SETTING_MAXS_MID") )
+                            parseSetting(DTYPE_VECTOR_FLOAT, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_MAXS_MID], charsmax(g_eSettings[SETTING_MAXS_MID]))
+                        else if ( equali(szKey, "SETTING_MINS_LARGE") )
+                            parseSetting(DTYPE_VECTOR_FLOAT, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_MINS_LARGE], charsmax(g_eSettings[SETTING_MINS_LARGE]))
+                        else if ( equali(szKey, "SETTING_MAXS_LARGE") )
+                            parseSetting(DTYPE_VECTOR_FLOAT, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_MAXS_LARGE], charsmax(g_eSettings[SETTING_MAXS_LARGE]))
                         else if ( equali(szKey, "SETTING_PAD_LOAD") )
                             parseSetting(DTYPE_BOOL, szKey, charsmax(szKey), szValue, charsmax(szValue), g_eSettings[SETTING_PAD_LOAD], charsmax(g_eSettings[SETTING_PAD_LOAD]))
                         else if ( equali(szKey, "SETTING_PAD_CHECK") )
@@ -516,6 +567,10 @@ ReadFile()
                             parseSetting(DTYPE_STRING_MODEL, szKey, charsmax(szKey), szValue, charsmax(szValue), ePad[PAD_MODEL], charsmax(ePad[PAD_MODEL]), g_eSettings[SETTING_DEFAULT_MODEL])
                         else if ( equali(szKey, "PAD_FLAGS") )
                             parseSetting(DTYPE_FLAGS, szKey, charsmax(szKey), szValue, charsmax(szValue), ePad[PAD_FLAGS], charsmax(ePad[PAD_FLAGS]), g_eSettings[SETTING_DEFAULT_FLAGS])
+                        else if ( equali(szKey, "PAD_TEAM") )
+                            parseSetting(DTYPE_INT, szKey, charsmax(szKey), szValue, charsmax(szValue), ePad[PAD_TEAM], charsmax(ePad[PAD_TEAM]), g_eSettings[SETTING_DEFAULT_TEAM])
+                        else if ( equali(szKey, "PAD_SIZE") )
+                            parseSetting(DTYPE_INT, szKey, charsmax(szKey), szValue, charsmax(szValue), ePad[PAD_SIZE], charsmax(ePad[PAD_SIZE]), g_eSettings[SETTING_DEFAULT_SIZE])
                         else if ( equali(szKey, "PAD_SPAWN_CHANCE") )
                             parseSetting(DTYPE_FLOAT, szKey, charsmax(szKey), szValue, charsmax(szValue), ePad[PAD_SPAWN_CHANCE], charsmax(ePad[PAD_SPAWN_CHANCE]), g_eSettings[SETTING_DEFAULT_SPAWN_CHANCE])
                         else if ( equali(szKey, "PAD_ACTIVE_DELAY") )
@@ -526,6 +581,8 @@ ReadFile()
                             parseSetting(DTYPE_FLOAT_RANGE, szKey, charsmax(szKey), szValue, charsmax(szValue), ePad[PAD_ACTIVE_COOLDOWN], charsmax(ePad[PAD_ACTIVE_COOLDOWN]))
                         else if ( equali(szKey, "PAD_RADIUS") )
                             parseSetting(DTYPE_FLOAT, szKey, charsmax(szKey), szValue, charsmax(szValue), ePad[PAD_RADIUS], charsmax(ePad[PAD_RADIUS]), g_eSettings[SETTING_DEFAULT_RADIUS])
+                        else if ( equali(szKey, "PAD_RADIUS_OFFSET") )
+                            parseSetting(DTYPE_FLOAT, szKey, charsmax(szKey), szValue, charsmax(szValue), ePad[PAD_RADIUS_OFFSET], charsmax(ePad[PAD_RADIUS_OFFSET]), g_eSettings[SETTING_DEFAULT_RADIUS_OFFSET])
                         else if ( equali(szKey, "PAD_STRENGTH") )
                             parseSetting(DTYPE_FLOAT_RANGE, szKey, charsmax(szKey), szValue, charsmax(szValue), ePad[PAD_STRENGTH], charsmax(ePad[PAD_STRENGTH]), g_eSettings[SETTING_DEFAULT_STRENGTH])
                         else if ( equali(szKey, "PAD_COOLDOWN") )
@@ -1127,14 +1184,16 @@ public padTask()
             if ( ePad[PAD_FLAGS] & FLAG_ACTIVE )
             {
                 xs_vec_copy(ePad[PAD_ORIGIN], fVec1)
-                fVec1[2] += TARGET_OFFSET_UP
+                fVec1[2] += ePad[PAD_RADIUS_OFFSET]
                 while( (iEnt = engfunc(EngFunc_FindEntityInSphere, iEnt, fVec1, ePad[PAD_RADIUS])) )
                 {
                     if ( !pev_valid(iEnt)
                     || ePad[PAD_ID] == iEnt
                     || pev(iEnt, pev_solid) == SOLID_NOT
                     || pev(iEnt, pev_movetype) == MOVETYPE_NONE
-                    || pev(iEnt, pev_movetype) == MOVETYPE_FOLLOW )
+                    || pev(iEnt, pev_movetype) == MOVETYPE_FOLLOW
+                    || (ePad[PAD_FLAGS] & FLAG_PLAYERS_ONLY && !is_user_alive(iEnt))
+                    || (is_user_alive(iEnt) && !(CsTeams:ePad[PAD_TEAM] & cs_get_user_team(iEnt))) )
                         continue
 
                     bFound = true
@@ -1208,7 +1267,13 @@ stock padCreate(id, iItem)
     set_pev(iEnt, PAD_ARRAY_ITEM, g_iPad)
     set_pev(iEnt, pev_impulse, PAD_KEY)
     set_pev(iEnt, pev_classname, g_szCN)
-    engfunc(EngFunc_SetModel, iEnt, g_eSettings[SETTING_DEFAULT_MODEL])
+
+    switch( ePad[PAD_SIZE] )
+    {
+        case SIZE_SMALL: engfunc(EngFunc_SetModel, iEnt, g_eSettings[SETTING_MODEL_SMALL])
+        case SIZE_MID: engfunc(EngFunc_SetModel, iEnt, g_eSettings[SETTING_MODEL_MID])
+        case SIZE_LARGE: engfunc(EngFunc_SetModel, iEnt, g_eSettings[SETTING_MODEL_LARGE])
+    }
 
     ArrayPushArray(g_aPad, ePad)
     g_iPad ++
@@ -1258,14 +1323,6 @@ public saveData(id)
 
         formatex(szData, charsmax(szData), "angles = %.2f %.2f %.2f^n",
         ePad[PAD_ANGLES][0], ePad[PAD_ANGLES][1], ePad[PAD_ANGLES][2])
-        fputs(iFile, szData)
-
-        formatex(szData, charsmax(szData), "mins = %.2f %.2f %.2f^n",
-        ePad[PAD_MINS][0], ePad[PAD_MINS][1], ePad[PAD_MINS][2])
-        fputs(iFile, szData)
-
-        formatex(szData, charsmax(szData), "maxs = %.2f %.2f %.2f^n",
-        ePad[PAD_MAXS][0], ePad[PAD_MAXS][1], ePad[PAD_MAXS][2])
         fputs(iFile, szData)
 
         formatex(szData, charsmax(szData), "angles = %.2f %.2f %.2f^n",
@@ -1592,8 +1649,12 @@ stock padSetBox(ePad[PAD])
 
     ePad[PAD_ANGLES][0] = -ePad[PAD_ANGLES][0]
     engfunc(EngFunc_AngleVectors, ePad[PAD_ANGLES], fForward, fRight, fUp)
-    xs_vec_copy(ePad[PAD_MINS], fMins)
-    xs_vec_copy(ePad[PAD_MAXS], fMaxs)
+    switch( ePad[PAD_SIZE] )
+    {
+        case SIZE_SMALL: { xs_vec_copy(g_eSettings[SETTING_MINS_SMALL], fMins); xs_vec_copy(g_eSettings[SETTING_MAXS_SMALL], fMaxs); }
+        case SIZE_MID: { xs_vec_copy(g_eSettings[SETTING_MINS_MID], fMins); xs_vec_copy(g_eSettings[SETTING_MAXS_MID], fMaxs); }
+        case SIZE_LARGE: { xs_vec_copy(g_eSettings[SETTING_MINS_LARGE], fMins); xs_vec_copy(g_eSettings[SETTING_MAXS_LARGE], fMaxs); }
+    }
 
     for ( new i = 0; i < 8; i ++ )
     {
