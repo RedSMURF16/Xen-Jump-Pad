@@ -1898,6 +1898,9 @@ stock padSound(iEnt, iSound, bool:bPlayer = true)
 
 stock padGet(ePad[PAD], iEnt)
 {
+    if ( !isPad(iEnt) )
+        return -1
+
     new iItem
     iItem = pev(iEnt, PAD_ARRAY_ITEM)
     if ( iItem < 0 || iItem >= g_iPad )
