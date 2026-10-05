@@ -976,6 +976,8 @@ public menuHandlerShow(id, menu, item)
         case SHOW_CURRENT:
         {
             ePad[PAD_FLAGS] ^= FLAG_SHOW
+            if ( !(ePad[PAD_FLAGS] & FLAG_SHOW) )
+                ePad[PAD_FLAGS] &= ~FLAG_ACTIVE
             padSetState(ePad)
 
             client_print_color(id, id, "%L %L", id, "PAD_CHAT_TAG", id, "PAD_CHAT_SHOW_CURRENT",
@@ -1006,6 +1008,7 @@ public menuHandlerShow(id, menu, item)
             {
                 ArrayGetArray(g_aPad, i, ePad)
                 ePad[PAD_FLAGS] &= ~FLAG_SHOW
+                ePad[PAD_FLAGS] &= ~FLAG_ACTIVE
                 padSetState(ePad)
 
                 ArraySetArray(g_aPad, i, ePad)
@@ -1307,46 +1310,43 @@ public padTask()
     {
         ArrayGetArray(g_aPad, i, ePad)
 
-        if ( ePad[PAD_FLAGS] & FLAG_SHOW )
+        if ( ePad[PAD_FLAGS] & FLAG_ACTIVE )
         {
-            if ( ePad[PAD_FLAGS] & FLAG_ACTIVE )
+            while( (iEnt = engfunc(EngFunc_FindEntityInSphere, iEnt, ePad[PAD_TRIGGER_ORIGIN], ePad[PAD_TRIGGER_RADIUS])) )
             {
-                while( (iEnt = engfunc(EngFunc_FindEntityInSphere, iEnt, ePad[PAD_TRIGGER_ORIGIN], ePad[PAD_TRIGGER_RADIUS])) )
-                {
-                    if ( !pev_valid(iEnt)
-                    || ePad[PAD_ID] == iEnt
-                    || pev(iEnt, pev_solid) == SOLID_NOT
-                    || pev(iEnt, pev_movetype) == MOVETYPE_NONE
-                    || pev(iEnt, pev_movetype) == MOVETYPE_FOLLOW
-                    || (ePad[PAD_FLAGS] & FLAG_PLAYERS_ONLY && !is_user_alive(iEnt))
-                    || (is_user_alive(iEnt) && !(CsTeams:ePad[PAD_TEAM] & cs_get_user_team(iEnt))) )
-                        continue
+                if ( !pev_valid(iEnt)
+                || ePad[PAD_ID] == iEnt
+                || pev(iEnt, pev_solid) == SOLID_NOT
+                || pev(iEnt, pev_movetype) == MOVETYPE_NONE
+                || pev(iEnt, pev_movetype) == MOVETYPE_FOLLOW
+                || (ePad[PAD_FLAGS] & FLAG_PLAYERS_ONLY && !is_user_alive(iEnt))
+                || (is_user_alive(iEnt) && !(CsTeams:ePad[PAD_TEAM] & cs_get_user_team(iEnt))) )
+                    continue
 
-                    pev(iEnt, pev_velocity, fVec1)
+                pev(iEnt, pev_velocity, fVec1)
 
-                    xs_vec_mul_scalar(ePad[PAD_DIRECTION], random_float(ePad[PAD_STRENGTH][0], ePad[PAD_STRENGTH][1]), fVec2)
-                    xs_vec_add(fVec1, fVec2, fVec1)
-                    set_pev(iEnt, pev_velocity, fVec1)
+                xs_vec_mul_scalar(ePad[PAD_DIRECTION], random_float(ePad[PAD_STRENGTH][0], ePad[PAD_STRENGTH][1]), fVec2)
+                xs_vec_add(fVec1, fVec2, fVec1)
+                set_pev(iEnt, pev_velocity, fVec1)
 
-                    ePad[PAD_FLAGS] &= ~FLAG_ACTIVE
-                    ePad[PAD_FLAGS] |= FLAG_PENDING
-                    ePad[PAD_NEXT_ACTIVE] = fCurrentTime + random_float(ePad[PAD_COOLDOWN][0], ePad[PAD_COOLDOWN][1])
-                    padSound(ePad[PAD_ID], SOUND_JUMP, false)
-                    padSetState(ePad)
+                ePad[PAD_FLAGS] &= ~FLAG_ACTIVE
+                ePad[PAD_FLAGS] |= FLAG_PENDING
+                ePad[PAD_NEXT_ACTIVE] = fCurrentTime + random_float(ePad[PAD_COOLDOWN][0], ePad[PAD_COOLDOWN][1])
+                padSound(ePad[PAD_ID], SOUND_JUMP, false)
+                padSetState(ePad)
 
-                    bModified = true
-                }
+                bModified = true
             }
-            else
+        }
+        else
+        {
+            if ( fCurrentTime >= ePad[PAD_NEXT_ACTIVE] )
             {
-                if ( fCurrentTime >= ePad[PAD_NEXT_ACTIVE] )
-                {
-                    ePad[PAD_FLAGS] |= FLAG_ACTIVE
-                    ePad[PAD_FLAGS] &= ~FLAG_PENDING
-                    padSetState(ePad)
+                ePad[PAD_FLAGS] |= FLAG_ACTIVE
+                ePad[PAD_FLAGS] &= ~FLAG_PENDING
+                padSetState(ePad)
 
-                    bModified = true
-                }
+                bModified = true
             }
         }
 
