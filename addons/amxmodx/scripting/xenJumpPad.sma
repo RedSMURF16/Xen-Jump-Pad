@@ -49,6 +49,14 @@
 #endif
 
 #define MAX_ENT                     32
+
+#define PAD_CHECK                 10.0
+#define PAD_OFFSET_BASE           120.0
+#define PAD_OFFSET_MIN            65.0
+#define PAD_OFFSET_MAX            900.0
+#define PAD_OFFSET_STEP           10.0
+#define PAD_GHOST_ALPHA           120
+#define PAD_ROTATION_STEP        22.5
 #define ADMIN_ACCESS                ADMIN_RCON
 #define PDATA_NEXT_ATTACK           83
 #define XO_CBASEPLAYER              5
@@ -150,13 +158,7 @@ enum _:MAIN_SETTINGS
     Array:SETTING_SOUND_JUMP,
 
     bool:SETTING_PAD_LOAD,
-    Float:SETTING_PAD_CHECK,
     Float:SETTING_PAD_TASK,
-    Float:SETTING_OFFSET_BASE,
-    Float:SETTING_OFFSET[2],
-    Float:SETTING_OFFSET_STEP,
-    SETTING_GHOST_ALPHA,
-    Float:SETTING_ROTATION_STEP
 }
 
 enum _:PAD
@@ -504,20 +506,8 @@ ReadFile()
                             parseSetting(DTYPE_ARRAY_SOUND, szValue, charsmax(szValue), g_eSettings[SETTING_SOUND_JUMP], charsmax(g_eSettings[SETTING_SOUND_JUMP]))
                         else if ( equali(szKey, "SETTING_PAD_LOAD") )
                             parseSetting(DTYPE_INT, szValue, charsmax(szValue), g_eSettings[SETTING_PAD_LOAD], charsmax(g_eSettings[SETTING_PAD_LOAD]))
-                        else if ( equali(szKey, "SETTING_PAD_CHECK") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_PAD_CHECK], charsmax(g_eSettings[SETTING_PAD_CHECK]))
                         else if ( equali(szKey, "SETTING_PAD_TASK") )
                             parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_PAD_TASK], charsmax(g_eSettings[SETTING_PAD_TASK]))
-                        else if ( equali(szKey, "SETTING_OFFSET_BASE") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_OFFSET_BASE], charsmax(g_eSettings[SETTING_OFFSET_BASE]))
-                        else if ( equali(szKey, "SETTING_OFFSET") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_OFFSET], charsmax(g_eSettings[SETTING_OFFSET]))
-                        else if ( equali(szKey, "SETTING_OFFSET_STEP") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_OFFSET_STEP], charsmax(g_eSettings[SETTING_OFFSET_STEP]))
-                        else if ( equali(szKey, "SETTING_GHOST_ALPHA") )
-                            parseSetting(DTYPE_INT, szValue, charsmax(szValue), g_eSettings[SETTING_GHOST_ALPHA], charsmax(g_eSettings[SETTING_GHOST_ALPHA]))
-                        else if ( equali(szKey, "SETTING_ROTATION_STEP") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_ROTATION_STEP], charsmax(g_eSettings[SETTING_ROTATION_STEP]))
                     }
                     case SECTION_PAD:
                     {
@@ -1187,7 +1177,7 @@ public menuHandlerRotate(id, menu, item)
         case ROTATE_UP:
         {
             pev(ePad[PAD_ID], pev_angles, ePad[PAD_ANGLES])
-            ePad[PAD_ANGLES][g_ePlayerData[id][PDATA_ROTATE_MODE]] -= g_eSettings[SETTING_ROTATION_STEP]
+            ePad[PAD_ANGLES][g_ePlayerData[id][PDATA_ROTATE_MODE]] -= PAD_ROTATION_STEP
             if ( ePad[PAD_ANGLES][g_ePlayerData[id][PDATA_ROTATE_MODE]] < -180.0 ) ePad[PAD_ANGLES][g_ePlayerData[id][PDATA_ROTATE_MODE]] += 360.0
 
             set_pev(ePad[PAD_ID], pev_angles, ePad[PAD_ANGLES])
@@ -1199,7 +1189,7 @@ public menuHandlerRotate(id, menu, item)
         case ROTATE_DOWN:
         {
             pev(ePad[PAD_ID], pev_angles, ePad[PAD_ANGLES])
-            ePad[PAD_ANGLES][g_ePlayerData[id][PDATA_ROTATE_MODE]] += g_eSettings[SETTING_ROTATION_STEP]
+            ePad[PAD_ANGLES][g_ePlayerData[id][PDATA_ROTATE_MODE]] += PAD_ROTATION_STEP
             if ( ePad[PAD_ANGLES][g_ePlayerData[id][PDATA_ROTATE_MODE]] > 180.0 ) ePad[PAD_ANGLES][g_ePlayerData[id][PDATA_ROTATE_MODE]] -= 360.0
 
             set_pev(ePad[PAD_ID], pev_angles, ePad[PAD_ANGLES])
@@ -1353,7 +1343,7 @@ stock padCreate(id, iItem)
         EnableAction(id)
         g_ePlayerData[id][PDATA_PAD_GHOST] = ePad[PAD_ID]
         g_ePlayerData[id][PDATA_ROTATE_MODE] = ROTATE_MODE_YAW
-        g_ePlayerData[id][PDATA_OFFSET] = g_eSettings[SETTING_OFFSET_BASE]
+        g_ePlayerData[id][PDATA_OFFSET] = PAD_OFFSET_BASE
 
         ePad[PAD_FLAGS] |= FLAG_GHOST
     }
@@ -1572,14 +1562,14 @@ public fwdPreThink(id)
         {
             if ( iButton & IN_ATTACK )
             {
-                g_ePlayerData[id][PDATA_OFFSET]      += g_eSettings[SETTING_OFFSET_STEP]
-                g_ePlayerData[id][PDATA_OFFSET]      = floatclamp(g_ePlayerData[id][PDATA_OFFSET], g_eSettings[SETTING_OFFSET][0], g_eSettings[SETTING_OFFSET][1])
+                g_ePlayerData[id][PDATA_OFFSET]      += PAD_OFFSET_STEP
+                g_ePlayerData[id][PDATA_OFFSET]      = floatclamp(g_ePlayerData[id][PDATA_OFFSET], PAD_OFFSET_MIN, PAD_OFFSET_MAX)
                 g_ePlayerData[id][PDATA_NEXT_OFFSET] = fCurrentTime + 0.1
             }
             else if ( iButton & IN_ATTACK2 )
             {
-                g_ePlayerData[id][PDATA_OFFSET]      -= g_eSettings[SETTING_OFFSET_STEP]
-                g_ePlayerData[id][PDATA_OFFSET]      = floatclamp(g_ePlayerData[id][PDATA_OFFSET], g_eSettings[SETTING_OFFSET][0], g_eSettings[SETTING_OFFSET][1])
+                g_ePlayerData[id][PDATA_OFFSET]      -= PAD_OFFSET_STEP
+                g_ePlayerData[id][PDATA_OFFSET]      = floatclamp(g_ePlayerData[id][PDATA_OFFSET], PAD_OFFSET_MIN, PAD_OFFSET_MAX)
                 g_ePlayerData[id][PDATA_NEXT_OFFSET] = fCurrentTime + 0.1
             }
         }
@@ -1651,7 +1641,7 @@ stock padCheck(id)
     global_get(glb_v_forward, fVec2)
 
     iBest = -1
-    fBestDist = g_eSettings[SETTING_PAD_CHECK]
+    fBestDist = PAD_CHECK
     for ( new i = 0; i < g_iPad; i ++ )
     {
         ArrayGetArray(g_aPad, i, ePad)
@@ -1818,7 +1808,7 @@ stock padSelect(ePad[PAD], iAction)
         case TARGET_GHOST:
         {
             iRender = kRenderTransAlpha
-            iRenderAmt = g_eSettings[SETTING_GHOST_ALPHA]
+            iRenderAmt = PAD_GHOST_ALPHA
         }
         case TARGET_HIDE:
         {
@@ -2032,5 +2022,11 @@ stock LogConfigError(const iLine, const szText[], any:...)
 
     log_to_file(ERROR_FILE, "^nLine %d: %s", iLine, szError)
 }
+
+
+
+
+
+
 
 
