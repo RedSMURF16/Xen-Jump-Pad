@@ -21,7 +21,6 @@
 
 #include <amxmodx>
 #include <amxmisc>
-#include <cstrike>
 #include <fakemeta>
 #include <hamsandwich>
 #include <xs>
@@ -1288,7 +1287,7 @@ public padTask()
                 || pev(iEnt, pev_movetype) == MOVETYPE_NONE
                 || pev(iEnt, pev_movetype) == MOVETYPE_FOLLOW
                 || (ePad[PAD_FLAGS] & FLAG_PLAYERS_ONLY && !is_user_alive(iEnt))
-                || (is_user_alive(iEnt) && !(CsTeams:ePad[PAD_TEAM] & cs_get_user_team(iEnt))) )
+                || (is_user_alive(iEnt) && !(ePad[PAD_TEAM] & get_user_team(iEnt))) )
                     continue
 
                 pev(iEnt, pev_velocity, fVec1)
@@ -1325,7 +1324,7 @@ public padTask()
 
 stock padCreate(id, iItem)
 {
-    new iEnt = cs_create_entity("info_target")
+    new iEnt = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_target"))
     if ( !pev_valid(iEnt) )
         return
 
