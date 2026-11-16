@@ -14,7 +14,10 @@ Custom setups are saved per map and automatically loaded on every map start.
 - Configurable per pad: launch strength, radius, cooldown, spawn chance, and activation timing
 - Round-based activation with delayed start, active duration, and cooldown before reactivation
 - Ghost preview tracking for natural alignment with grounds and walls
-- [color=red]Requires AMX Mod X 1.9.0+[/color]
+
+## 📋 Requirements
+- ReGameDLL
+- AMX Mod X 1.10+
 
 ## 💬 Commands
 - `say /xenjump` - Opens the Xen Jump Pad menu.
