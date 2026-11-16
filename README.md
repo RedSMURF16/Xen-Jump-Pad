@@ -42,3 +42,5 @@ Custom setups are saved per map and automatically loaded on every map start.
 * v1.0: Initial release.
 * v1.1: Fixed the model, added different sizes, added usage per team.
 ```
+
+[![Watch on YouTube](https://img.shields.io/badge/YouTube-Watch%20video-FF0000?logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=wO5SUCOOFrc)
