@@ -1,7 +1,7 @@
 <h1 align="center">Xen Jump Pad</h1>
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=wO5SUCOOFrc"><img src="https://img.youtube.com/vi/wO5SUCOOFrc/maxresdefault.jpg" alt="Watch on YouTube" width="600"></a>
+  <img src="images/demo.gif" alt="Xen Jump Pad">
 </p>
 
 ## 📝 Description
