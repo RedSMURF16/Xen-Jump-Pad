@@ -47,13 +47,13 @@
 
 #define MAX_ENT                     32
 
-#define PAD_CHECK                 10.0
-#define PAD_OFFSET_BASE           120.0
-#define PAD_OFFSET_MIN            65.0
-#define PAD_OFFSET_MAX            900.0
-#define PAD_OFFSET_STEP           10.0
-#define PAD_GHOST_ALPHA           120
-#define PAD_ROTATION_STEP        22.5
+#define PAD_CHECK                   10.0
+#define PAD_OFFSET_BASE             120.0
+#define PAD_OFFSET_MIN              65.0
+#define PAD_OFFSET_MAX              900.0
+#define PAD_OFFSET_STEP             10.0
+#define PAD_GHOST_ALPHA             120
+#define PAD_ROTATION_STEP           22.5
 #define ADMIN_ACCESS                ADMIN_RCON
 #define PDATA_NEXT_ATTACK           83
 #define XO_CBASEPLAYER              5
@@ -1307,7 +1307,8 @@ public padTask()
         }
         else
         {
-            if ( fCurrentTime >= ePad[PAD_NEXT_ACTIVE] )
+            if ( ePad[PAD_NEXT_ACTIVE] > 0.0
+            && fCurrentTime >= ePad[PAD_NEXT_ACTIVE] )
             {
                 ePad[PAD_FLAGS] |= FLAG_ACTIVE
                 ePad[PAD_FLAGS] &= ~FLAG_PENDING
@@ -1340,6 +1341,7 @@ stock padCreate(id, iItem)
         g_ePlayerData[id][PDATA_OFFSET] = PAD_OFFSET_BASE
 
         ePad[PAD_FLAGS] |= FLAG_GHOST
+        ePad[PAD_SIZE] = g_ePlayerData[id][PDATA_ROTATE_SIZE]
     }
 
     padSelect(ePad, TARGET_GHOST)
